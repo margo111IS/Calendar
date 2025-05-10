@@ -2,8 +2,6 @@
 using System;
 using Events;
 
-//1. accept multiple events at once?
-//2. to prompt user after error?
 class Program
 {
     static void Main(string[] args)
@@ -15,24 +13,27 @@ class Program
             Console.WriteLine("\nList of options: \n1. EVENT\n2. LIST\n3. STATS\n4. END");
             Console.Write("\nOption: ");
             string[] parts = Console.ReadLine().Trim().Split(';');
-            //string[] parts = new string[] { "EVENT", "Birthday Party", "2023-10-" };
+            if (parts[0] == "EVENT" && parts.Length < 3)
+            {
+                Console.WriteLine("Invalid input. Please provide an event with correct number of parameters.");
+                continue;
+            }
             switch (parts[0])
             {
                 case "EVENT":
-                    Console.WriteLine("You selected EVENT.meow");
                     string eventName = string.Empty;
                     DateTime eventDate = DateTime.MinValue;
-                    int[] date = null;//parts[2].Split('-').Select(int.Parse).ToArray();
+                    int[] date = null;
                     try
                     {
                         date = Array.ConvertAll(parts[2].Split('-'), int.Parse);
                     }
-                    catch (FormatException)
+                    catch (Exception ex)
                     {
-                        Console.WriteLine("Invalid date format. Please use YYYY-MM-DD.");
+                        Console.WriteLine($"Error: {ex.Message}");
                         break;
                     }
-                    if (!string.IsNullOrEmpty(parts[1])) eventName = parts[1];
+                    if (!string.IsNullOrWhiteSpace(parts[1])) eventName = parts[1];
                     else
                     {
                         Console.WriteLine("Event name cannot be empty.");
@@ -46,20 +47,27 @@ class Program
                             break;
                         }
                     }
-                    if (date.Length == 3 && date[0] > 0 && date[1] > 0 && date[2] > 0 && date[1] <= 12 && date[2] <= 31)
+                    try
                     {
-                        eventDate = new DateTime(date[0], date[1], date[2]);
+                        if (date.Length == 3 && date[0] > 0 && date[1] > 0 && date[2] > 0 && date[1] <= 12 && date[2] <= 31)
+                        {
+                            eventDate = new DateTime(date[0], date[1], date[2]);
+                        }
+                        else
+                        {
+                            Console.WriteLine("Invalid date format. Please use YYYY-MM-DD.");
+                            break;
+                        }
                     }
-                    else
+                    catch (Exception ex)
                     {
-                        Console.WriteLine("Invalid date format. Please use YYYY-MM-DD.");
+                        Console.WriteLine($"Error: {ex.Message}");
                         break;
                     }
                     Events.Event newEvent = new Events.Event(eventName, eventDate);
                     events.Add(newEvent);
                     break;
                 case "LIST":
-                    Console.WriteLine("You selected LIST.");
                     if (events.Count == 0)
                     {
                         Console.WriteLine("No events to display");
@@ -67,9 +75,10 @@ class Program
                     else
                     {
                         Console.WriteLine("Events:");
+                        events.Sort((x, y) => x.Date.CompareTo(y.Date));
                         foreach (var ev in events)
                         {
-                            TimeSpan timeSpan = ev.Date.Subtract(DateTime.Now);
+                            TimeSpan timeSpan = ev.Date.Subtract(DateTime.Today);
                             if (timeSpan.Days > 0)
                             {
                                 Console.WriteLine($"Event {ev.EventName} with date {ev.Date.ToString("yyyy-MM-dd")} will happen in {timeSpan.Days} days.");
@@ -86,7 +95,23 @@ class Program
                     }
                     break;
                 case "STATS":
-                    Console.WriteLine("You selected STATS.");
+                    Dictionary<DateTime, int> eventCount = new Dictionary<DateTime, int>();
+                    eventCount.OrderBy(e => e.Key).ToDictionary(e => e.Key, e => e.Value);
+                    foreach (var ev in events)
+                    {
+                        if (eventCount.ContainsKey(ev.Date))
+                        {
+                            eventCount[ev.Date]++;
+                        }
+                        else
+                        {
+                            eventCount[ev.Date] = 1;
+                        }
+                    }
+                    foreach (var ev in eventCount)
+                    {
+                        Console.WriteLine($"Date: {ev.Key.ToString("yyyy-MM-dd")}: {ev.Value} events.");
+                    }
                     break;
                 case "END":
                     Console.WriteLine("Ending the application.");
@@ -96,6 +121,5 @@ class Program
                     break;
             }
         }
-
     }
 }
