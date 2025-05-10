@@ -1,5 +1,6 @@
 ﻿
 using System;
+using System.Globalization;
 using Events;
 
 class Program
@@ -23,50 +24,23 @@ class Program
                 case "EVENT":
                     string eventName = string.Empty;
                     DateTime eventDate = DateTime.MinValue;
-                    int[] date = null;
-                    try
-                    {
-                        date = Array.ConvertAll(parts[2].Split('-'), int.Parse);
-                    }
-                    catch (Exception ex)
-                    {
-                        Console.WriteLine($"Error: {ex.Message}");
-                        break;
-                    }
+
                     if (!string.IsNullOrWhiteSpace(parts[1])) eventName = parts[1];
                     else
                     {
                         Console.WriteLine("Event name cannot be empty.");
                         break;
                     }
-                    foreach (var d in parts[2].Split('-'))
+                    if (!DateTime.TryParseExact(parts[2], "yyyy-MM-dd", CultureInfo.InvariantCulture, System.Globalization.DateTimeStyles.None, out eventDate))
                     {
-                        if (!int.TryParse(d, out int result) || result < 0)
-                        {
-                            Console.WriteLine("Invalid date format. Please use YYYY-MM-DD.");
-                            break;
-                        }
-                    }
-                    try
-                    {
-                        if (date.Length == 3 && date[0] > 0 && date[1] > 0 && date[2] > 0 && date[1] <= 12 && date[2] <= 31)
-                        {
-                            eventDate = new DateTime(date[0], date[1], date[2]);
-                        }
-                        else
-                        {
-                            Console.WriteLine("Invalid date format. Please use YYYY-MM-DD.");
-                            break;
-                        }
-                    }
-                    catch (Exception ex)
-                    {
-                        Console.WriteLine($"Error: {ex.Message}");
+                        Console.WriteLine("Invalid date format. Please use YYYY-MM-DD.");
                         break;
                     }
+
                     Events.Event newEvent = new Events.Event(eventName, eventDate);
                     events.Add(newEvent);
                     break;
+
                 case "LIST":
                     if (events.Count == 0)
                     {
@@ -94,9 +68,9 @@ class Program
                         }
                     }
                     break;
+
                 case "STATS":
                     Dictionary<DateTime, int> eventCount = new Dictionary<DateTime, int>();
-                    eventCount.OrderBy(e => e.Key).ToDictionary(e => e.Key, e => e.Value);
                     foreach (var ev in events)
                     {
                         if (eventCount.ContainsKey(ev.Date))
@@ -108,14 +82,17 @@ class Program
                             eventCount[ev.Date] = 1;
                         }
                     }
-                    foreach (var ev in eventCount)
+                    var orderedDict = eventCount.OrderBy(e => e.Key);
+                    foreach (var ev in orderedDict)
                     {
                         Console.WriteLine($"Date: {ev.Key.ToString("yyyy-MM-dd")}: {ev.Value} events.");
                     }
                     break;
+
                 case "END":
                     Console.WriteLine("Ending the application.");
                     return;
+
                 default:
                     Console.WriteLine("Invalid option. Please try again.");
                     break;
